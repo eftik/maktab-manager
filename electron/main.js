@@ -1,20 +1,34 @@
 import { app, BrowserWindow } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
+import updater from "electron-updater";
+
+const { autoUpdater } = updater;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+let win;
+
 function createWindow() {
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 1200,
     height: 800,
-    autoHideMenuBar: true
+    autoHideMenuBar: true,
+    show: false
   });
 
   const indexPath = path.join(__dirname, "..", "dist", "index.html");
 
   win.loadFile(indexPath);
+
+  win.once("ready-to-show", () => {
+    win.show();
+  });
+
+  win.webContents.on("did-finish-load", () => {
+    autoUpdater.checkForUpdatesAndNotify();
+  });
 }
 
 app.whenReady().then(() => {
@@ -28,25 +42,3 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
-
-
-const { BrowserWindow } = require("electron")
-
-const createWindow = () => {
-  const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    show: false
-  })
-
-  win.loadFile("dist/index.html")
-
-  win.once("ready-to-show", () => {
-    win.show()
-  })
-}
-const { autoUpdater } = require("electron-updater")
-
-app.whenReady().then(() => {
-  autoUpdater.checkForUpdatesAndNotify()
-})

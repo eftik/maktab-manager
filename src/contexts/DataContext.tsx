@@ -25,6 +25,14 @@ import type {
   StaffRole
 } from "../types";
 
+async function syncToCloud(data: any) {
+  if (!navigator.onLine) return;
+
+  await supabase
+    .from("backup_data" as any)
+    .upsert({ data });
+}
+
 interface QueuedMutation {
   id: string;
   table: "schools" | "students" | "payments" | "expenses" | "staff";
@@ -92,6 +100,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const initializedRef = useRef(false);
   const idMapRef = useRef<Map<string, string>>(new Map());
 
+  useEffect(() => {
+  if (!initializedRef.current) return;
+
+  syncToCloud({
+    schools,
+    students,
+    payments,
+    expenses,
+    staffList
+  });
+}, [schools, students, payments, expenses, staffList]);
+
   /* ---------------- ONLINE / OFFLINE ---------------- */
 
   useEffect(() => {
@@ -144,6 +164,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
       initializedRef.current = true;
       setLoading(false);
+      initializedRef.current = true;
     };
 
     init();

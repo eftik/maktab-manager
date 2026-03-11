@@ -78,45 +78,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const loadSession = async () => {
 
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
 
-        const u = session?.user ?? null;
+          const u = session?.user ?? null;
 
-        if (u) {
-          setUser(u);
-          await fetchAdmin(u.id);
-          setLoading(false);
-          initializedRef.current = true;
-          return;
-        }
-
-      } catch {}
-
-      const offlineSession = localStorage.getItem("offlineSession");
-      const offlineAdmin = localStorage.getItem("offlineAdmin");
-
-      if (offlineSession) {
-        const session = JSON.parse(offlineSession);
-        const u = session?.user ?? null;
-
-        if (u) {
-          setUser(u);
-
-          if (offlineAdmin) {
-            setAdmin(JSON.parse(offlineAdmin));
+          if (u) {
+            setUser(u);
+            await fetchAdmin(u.id);
+            setLoading(false);
+            initializedRef.current = true;
+            return;
           }
 
-          setLoading(false);
-          initializedRef.current = true;
-          return;
-        }
-      }
+          // 🔴 OFFLINE FALLBACK
+          const offlineAdmin = localStorage.getItem("offlineAdmin");
+          const offlineSession = localStorage.getItem("offlineSession");
 
-      // If nothing found at all
-      setLoading(false);
-      initializedRef.current = true;
-    }
+          if (offlineAdmin && offlineSession) {
+            const adminData = JSON.parse(offlineAdmin);
+            const sessionData = JSON.parse(offlineSession);
+
+            setUser(sessionData.user);
+            setAdmin(adminData);
+          }
+
+        } catch (error) {
+          console.error("Session load failed", error);
+        }
+
+        setLoading(false);
+        initializedRef.current = true;
+      };
     loadSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -160,7 +153,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return null;
 
-  } catch {
+  } catch (err) {
+
+    console.warn("Online login failed, trying offline login...");
 
     // Offline fallback login
     const cachedSession = localStorage.getItem("offlineSession");
@@ -180,7 +175,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return "No internet and no saved login.";
   }
-};
+};;
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -195,7 +190,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         admin,
         loading,
-        isOwner: admin?.role === 'owner',
+        isOwner: admin?.role === 'owner' || JSON.parse(localStorage.getItem("offlineAdmin") || "{}")?.role === "owner",
         signIn,
         signOut
       }}

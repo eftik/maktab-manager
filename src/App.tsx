@@ -43,7 +43,7 @@ const pages: Record<string, React.FC> = {
   '/admins': AdminsPage,
 };
 
-const ownerOnlyPages = ['/reports', '/admins'];
+const ownerOnlyPages = ['/admins'];
 
 const PageSpinner = () => (
   <div className="flex items-center justify-center py-20">
@@ -53,7 +53,9 @@ const PageSpinner = () => (
 
 const AuthenticatedApp = () => {
   const { user, admin, loading, isOwner } = useAuth();
-  const [path, setPath] = useState('/');
+  const [path, setPath] = useState(() => {
+  return localStorage.getItem("appPath") || "/";
+});
   const [ownerExists, setOwnerExists] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -129,7 +131,13 @@ const AuthenticatedApp = () => {
   return (
     <DataProvider>
       <AutoBackupRunner />
-      <AppShell currentPath={effectivePath} onNavigate={setPath}>
+      <AppShell
+          currentPath={effectivePath}
+          onNavigate={(p) => {
+            setPath(p);
+            localStorage.setItem("appPath", p);
+          }}
+        >
         <Page />
       </AppShell>
     </DataProvider>
